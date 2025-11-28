@@ -1,0 +1,2013 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>K9 Unit — Crypto & Real Estate Dashboard</title>
+    <style>
+        :root{
+            --bg:#4b81ee; --bg-2:#0b2a4d; --card:#f0f8f8; --card-alt:#e6f0ff; --muted:#667085; --muted-2:#51607a;
+            --accent:#4f46e5; --accent-2:#06b6d4; --accent-3:#f59e0b; --success:#10b981; --danger:#ef4444; --glass: rgba(15,23,42,0.04);
+            --text:#0f172a;
+        }
+        [data-theme="dark"]{
+            --bg:#071022; --bg-2:#041020; --card:#071326; --card-alt:#081827; --muted:#94a3b8; --muted-2:#7b8ea6;
+            --accent:#7c3aed; --accent-2:#06b6d4; --accent-3:#f59e0b; --success:#34d399; --danger:#f87171; --glass: rgba(255,255,255,0.03);
+            --text:#e6eef8;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+            background:linear-gradient(180deg,var(--bg), #e9eefb 60%); color:var(--text); min-height:100vh;
+        }
+
+        .app{
+            display:flex; gap:20px; padding:20px; max-width:1200px; margin:20px auto;
+        }
+
+        /* Sidebar */
+        .sidebar{
+            width:260px; background:var(--card); border-radius:12px; padding:18px; box-shadow:0 6px 22px rgba(2,6,23,0.08);
+            position:sticky; top:24px; height:calc(100vh - 48px); overflow:auto;
+        }
+        .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+        .logo{width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+        .brand h1{font-size:16px;margin:0}
+        nav{margin-top:8px}
+        .nav-link{display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;color:var(--muted);cursor:pointer}
+        .nav-link.active{background:var(--glass);color:var(--text);font-weight:600}
+        .nav-link:hover{background:var(--glass);color:var(--text)}
+        .small{font-size:13px;color:var(--muted)}
+        .sidebar .footer{margin-top:18px;padding-top:12px;border-top:1px dashed rgba(0,0,0,0.04)}
+        .btn{
+            background:var(--accent); color:white; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; box-shadow:0 6px 18px rgba(79,70,229,0.06)
+        }
+        .btn.ghost{background:transparent;color:var(--accent); border:1px solid rgba(79,70,229,0.12)}
+        .btn.alt{background:var(--accent-2); box-shadow:none}
+
+        /* Main content */
+        .main{
+            flex:1; min-height:600px;
+        }
+        .card{background:var(--card); border-radius:12px; padding:18px; box-shadow:0 6px 22px rgba(2,6,23,0.04); margin-bottom:18px}
+        .card.alt{background:linear-gradient(180deg,var(--card-alt), var(--card));}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .tile{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
+        /* colorful tiles */
+        .grid .tile:nth-child(1){background:linear-gradient(180deg, rgba(79,70,229,0.08), rgba(79,70,229,0.02)); border:1px solid rgba(79,70,229,0.06)}
+        .grid .tile:nth-child(2){background:linear-gradient(180deg, rgba(6,182,212,0.05), rgba(6,182,212,0.01)); border:1px solid rgba(6,182,212,0.06)}
+        .grid .tile:nth-child(3){background:linear-gradient(180deg, rgba(245,158,11,0.05), rgba(245,158,11,0.01)); border:1px solid rgba(245,158,11,0.06)}
+        .muted{color:var(--muted);font-size:13px}
+        .big{font-size:22px;font-weight:700}
+        .flex{display:flex;gap:12px;align-items:center}
+        .right{margin-left:auto}
+
+        /* Forms & steps */
+        .form-row{display:flex;gap:12px}
+        .form-field{flex:1;display:flex;flex-direction:column;margin-bottom:10px}
+        label{font-size:13px;margin-bottom:6px;color:var(--muted)}
+        input[type="text"],input[type="email"],input[type="password"],select,textarea{
+            padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:transparent;color:var(--text)
+        }
+        .steps{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+        .step{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.04);font-weight:700;color:var(--muted)}
+        .step.active{background:var(--accent);color:white}
+
+        .hidden{display:none}
+        .toast{position:fixed;right:20px;bottom:20px;padding:12px 16px;background:#111827;color:white;border-radius:8px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+
+        /* Modal */
+        .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.4);display:flex;align-items:center;justify-content:center}
+        .modal{background:var(--card);padding:18px;border-radius:12px;width:420px;max-width:92%}
+
+        /* Responsive */
+        @media (max-width:900px){
+            .app{padding:12px;flex-direction:column}
+            .sidebar{width:100%;height:auto;position:relative}
+            .grid{grid-template-columns:repeat(1,1fr)}
+        }
+        /* Illustrations */
+        .illustration{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+        .illustration img{width:100%;max-width:360px;height:200px;border-radius:10px;object-fit:cover;box-shadow:0 8px 30px rgba(2,6,23,0.06)}
+        .caption{font-size:13px;color:var(--muted);margin-top:6px}
+        .sparkline{width:120px;height:36px}
+        .news-card{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
+        .news-list{max-height:140px;overflow:auto}
+        /* Ad modal (removed) */
+        .debug-box{position:fixed;right:16px;top:16px;background:#111827;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;opacity:0.9;z-index:1200}
+    </style>
+</head>
+<body>
+    <div class="app" id="app" data-theme>
+        <aside class="sidebar" role="navigation" aria-label="Main navigation">
+            <div class="brand">
+                <div class="logo">AJA</div>
+                    <div>
+                        <div style="font-size:14px;font-weight:700">AJA Capital</div>
+                        <div class="small">Invest · Property · Manage</div>
+                    </div>
+            </div>
+
+            <nav>
+                <div class="nav-link active" data-target="dashboard">Dashboard</div>
+                <div class="nav-link" data-target="crypto">Crypto Investments</div>
+                <div class="nav-link" data-target="realestate">Real Estate</div>
+                <div class="nav-link" data-target="create">Create Account</div>
+                <div class="nav-link" data-target="account">Account Info</div>
+                <div class="nav-link" data-target="settings">Settings</div>
+                <div class="nav-link" data-target="withdraw" id="navWithdraw">Withdraw</div>
+
+                <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <div class="muted">Live Price</div>
+                        <div id="aiSignal" class="small muted" style="font-weight:700;margin-left:6px">—</div>
+                                <button class="btn ghost" id="withdrawBtn" style="margin-top:8px">Withdraw</button>
+                    <div>
+                        <button class="btn ghost" id="openTrade">Quick Trade</button>
+                    </div>
+                </div>
+
+                <div class="illustration card" role="img" aria-label="Cryptocurrency illustration">
+
+            <div class="footer">
+                <div class="small">Logged as</div>
+                <div style="font-weight:700" id="user-label">Guest</div>
+                <div style="margin-top:10px">
+                    <button class="btn" id="quickCreate">Quick Create</button>
+                        <button class="btn ghost" id="toggleDarkMobile" style="margin-top:8px;width:100%">Toggle Theme</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <!-- Dashboard -->
+            <section class="card" data-section="dashboard">
+                <div class="header">
+                    <div>
+                        <div class="small">Welcome back,</div>
+                        <div style="font-size:18px;font-weight:700" id="welcomeName">Investor</div>
+                    </div>
+                    <div class="flex">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <div class="small muted" id="lastLogin">Not signed in</div>
+                                <div class="small muted" id="balanceBadge" style="font-weight:700">Balance: $0.00</div>
+                            </div>
+                        <button class="btn" id="openCreate">Create Account</button>
+                        <button class="btn ghost" id="openLogin" style="margin-left:8px">Login</button>
+                        <button class="btn ghost" id="exportBtn" style="margin-left:8px">Export Portfolio</button>
+                    </div>
+                </div>
+
+                    <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <div class="small muted">Portfolio window</div>
+                            <select id="chartWindow" style="padding:6px;border-radius:6px;border:1px solid rgba(0,0,0,0.06);margin-left:6px">
+                                <option value="60">1m</option>
+                                <option value="120" selected>2m</option>
+                                <option value="300">5m</option>
+                            </select>
+                        </div>
+                        <div class="small muted">Live portfolio graph (crypto & real estate)</div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:12px">
+                        <canvas id="portfolioChart" width="600" height="250" aria-label="Portfolio distribution chart" role="img"></canvas>
+                    </div>
+
+                    <div id="dashboardMarketCard" class="card" style="margin-bottom:12px">
+                        <div class="small muted">Live Market (click to open chart)</div>
+                        <div id="dashboardMarketList" style="max-height:140px;overflow:auto;margin-top:8px" class="small muted">Loading...</div>
+                    </div>
+
+                <div class="grid" aria-hidden="false">
+                    <div class="tile card">
+                        <div class="muted">Total Crypto Value</div>
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <div class="big" id="cryptoVal">$0.00</div>
+                            <div class="sparkline" id="cryptoSpark"></div>
+                        </div>
+                        <div class="small muted">Estimated in USD</div>
+                    </div>
+                    <div class="tile card">
+                        <div class="muted">Total Real Estate Value</div>
+                        <div class="big" id="reVal">$0.00</div>
+                        <div class="small muted">Portfolio market value</div>
+                    </div>
+                    <div class="tile card">
+                        <div class="muted">Account Balance</div>
+                        <div class="big"><span id="acctBalance">$0.00</span></div>
+                        <div class="small muted">Status: <span id="acctStatus">Not Created</span> — Manage in Account Info</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Crypto breakdown on dashboard -->
+            <section id="cryptoBreakdownCard" class="card" style="margin-bottom:18px">
+                <div class="header"><h3 style="margin:0">Crypto Breakdown</h3><div class="muted">Value per coin in your holdings</div></div>
+                <div id="cryptoBreakdown" class="small muted">No holdings yet</div>
+            </section>
+
+            <section class="card" style="margin-bottom:18px">
+                <div class="header">
+                    <h2 style="margin:0">Market News (demo)</h2>
+                    <div class="muted">Latest headlines</div>
+                </div>
+                <div class="news-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div class="small muted">Top stories</div>
+                        <button class="btn ghost" id="refreshNews">Refresh</button>
+                    </div>
+                    <div id="newsList" class="news-list small muted">No news yet — click Refresh.</div>
+                </div>
+            </section>
+
+            <section class="card" style="margin-bottom:18px">
+                <div class="header">
+                    <h2 style="margin:0">Order History</h2>
+                    <div class="muted">Recorded trades (demo)</div>
+                </div>
+                <div id="ordersCard" class="card" style="overflow:auto;max-height:220px">
+                    <table id="ordersTable" style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr class="small muted"><th style="text-align:left;padding:6px">Date</th><th style="padding:6px">Type</th><th style="padding:6px">Symbol</th><th style="padding:6px">Qty</th><th style="padding:6px">Price</th><th style="padding:6px">Amount</th></tr>
+                        </thead>
+                        <tbody id="ordersTbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Crypto -->
+            <section class="card hidden" data-section="crypto">
+                <div class="header">
+                    <h2 style="margin:0">Crypto Investments</h2>
+                    <div class="muted">Simple portfolio demo</div>
+                </div>
+
+                    <div class="illustration card" role="img" aria-label="Cryptocurrency illustration">
+                        <div>
+                            <!-- Inline SVG crypto illustration (always available) -->
+                            <svg width="360" height="200" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cryptocurrency illustration">
+                                <rect width="360" height="200" rx="10" fill="var(--glass)" />
+                                <g transform="translate(20,24)">
+                                    <circle cx="40" cy="40" r="28" fill="#f59e0b" />
+                                    <text x="40" y="46" text-anchor="middle" font-size="20" font-weight="700" fill="white">B</text>
+                                    <rect x="100" y="12" width="200" height="16" rx="8" fill="#e6eef8" opacity="0.6" />
+                                    <rect x="100" y="40" width="160" height="10" rx="6" fill="#c7d2fe" />
+                                    <polyline points="0,120 30,80 60,100 90,60 120,90 150,50 180,70" fill="none" stroke="#7c3aed" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+                                </g>
+                            </svg>
+                            <div class="caption">Overview: crypto markets, prices and portfolio performance.</div>
+                        </div>
+                    </div>
+
+                <div class="card" style="margin-top:12px;margin-bottom:12px">
+                    <canvas id="cryptoPriceChart" width="800" height="220" aria-label="Crypto price chart" role="img"></canvas>
+                </div>
+
+                <div id="cryptoList" class="card" style="margin-bottom:12px">
+                    <div class="small muted">Holdings</div>
+                    <div id="holdings">No holdings yet</div>
+                </div>
+
+                <div id="marketListCard" class="card" style="margin-bottom:12px">
+                    <div class="small muted">Market (click a coin to view chart)</div>
+                    <div id="marketList" style="max-height:240px;overflow:auto;margin-top:8px" class="small muted">Loading market data...</div>
+                </div>
+
+                <form id="addCryptoForm" class="card">
+                    <div class="small muted">Add a holding</div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Symbol</label>
+                            <input type="text" id="c_symbol" placeholder="e.g. BTC" />
+                        </div>
+                        <div class="form-field">
+                            <label>Amount</label>
+                            <input type="text" id="c_amount" placeholder="1.25" />
+                        </div>
+                        <div style="display:flex;align-items:end">
+                            <button class="btn" id="addCrypto">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Real Estate -->
+            <section class="card hidden" data-section="realestate">
+                <div class="header">
+                    <h2 style="margin:0">Real Estate</h2>
+                    <div class="muted">Properties and valuations</div>
+                </div>
+
+                    <div class="illustration card" role="img" aria-label="Real estate illustration">
+                        <div>
+                            <!-- Inline SVG real estate illustration (always available) -->
+                            <svg width="360" height="200" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Real estate illustration">
+                                <rect width="360" height="200" rx="10" fill="var(--glass)" />
+                                <g transform="translate(36,28)">
+                                    <rect x="8" y="48" width="120" height="72" rx="6" fill="#06b6d4" />
+                                    <polygon points="0,48 64,8 128,48" fill="#0ea5a1" />
+                                    <rect x="152" y="68" width="140" height="52" rx="6" fill="#c7d2fe" />
+                                    <rect x="162" y="82" width="40" height="20" rx="3" fill="#fff" opacity="0.8" />
+                                    <rect x="210" y="82" width="40" height="20" rx="3" fill="#fff" opacity="0.6" />
+                                </g>
+                            </svg>
+                            <div class="caption">Properties: listings, valuations and portfolio management.</div>
+                        </div>
+                    </div>
+
+                <div id="propList" class="card" style="margin-bottom:12px">
+                    <div class="small muted">Properties</div>
+                    <div id="properties">No properties yet</div>
+                </div>
+
+                <form id="addPropForm" class="card">
+                    <div class="small muted">Add property</div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Address</label>
+                            <input type="text" id="p_address" placeholder="123 Main St" />
+                        </div>
+                        <div class="form-field">
+                            <label>Value (USD)</label>
+                            <input type="text" id="p_value" placeholder="250000" />
+                        </div>
+                        <div style="display:flex;align-items:end">
+                            <button class="btn" id="addProp">Add</button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Create Account (Multistep) -->
+            <section class="card hidden" data-section="create">
+                <div class="header">
+                    <h2 style="margin:0">Create Account</h2>
+                    <div class="muted">3 steps to set up your account</div>
+                </div>
+
+                <div class="steps" id="stepsBar">
+                    <div class="step active" data-step="1">1</div>
+                    <div class="step" data-step="2">2</div>
+                    <div class="step" data-step="3">3</div>
+                </div>
+
+                <form id="createForm">
+                    <!-- Step 1 -->
+                    <div class="step-panel" data-step="1">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Full name</label>
+                                <input type="text" id="fullName" required />
+                            </div>
+                            <div class="form-field">
+                                <label>Email</label>
+                                <input type="email" id="email" required />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Phone (optional)</label>
+                                <input type="text" id="phone" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="step-panel hidden" data-step="2">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Password</label>
+                                <input type="password" id="password" required minlength="6" />
+                            </div>
+                            <div class="form-field">
+                                <label>Confirm Password</label>
+                                <input type="password" id="confirmPassword" required />
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>Country</label>
+                            <select id="country">
+                                <option value="">Select</option>
+                                <option>United States</option>
+                                <option>United Kingdom</option>
+                                <option>Canada</option>
+                                <option>Australia</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="step-panel hidden" data-step="3">
+                        <div class="form-field">
+                            <label>Preferences</label>
+                            <div style="display:flex;gap:8px;margin-top:6px">
+                                <label><input type="checkbox" id="prefCrypto" checked /> Crypto insights</label>
+                                <label><input type="checkbox" id="prefReal" checked /> Real estate alerts</label>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>Initial deposit (demo)</label>
+                            <input type="text" id="deposit" placeholder="e.g. 1000" />
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:12px">
+                        <button type="button" class="btn ghost" id="backStep">Back</button>
+                        <button type="button" class="btn" id="nextStep">Next</button>
+                        <button type="submit" class="btn hidden" id="submitCreate">Create Account</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Account Info -->
+            <section class="card hidden" data-section="account">
+                <div class="header">
+                    <h2 style="margin:0">Account Info</h2>
+                    <div class="muted">Manage your profile and status</div>
+                </div>
+
+                <div id="accountCard" class="card">
+                    <div class="small muted">Profile</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <div id="infoName" style="font-weight:700"></div>
+                            <div class="muted" id="infoEmail"></div>
+                            <div class="muted" id="infoPhone"></div>
+                        </div>
+                        <div class="right">
+                            <div class="muted">Status: <span id="infoStatus">No account</span></div>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <button class="btn ghost" id="editAccount" style="margin-top:8px">Edit</button>
+                                <button class="btn" id="fundAccountBtn" style="margin-top:8px">Fund Account</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Withdraw Page (full, non-faded) -->
+            <section class="card hidden" data-section="withdraw">
+                <div class="header">
+                    <h2 style="margin:0">Withdraw Funds</h2>
+                    <div class="muted">Request a withdrawal to your bank or card (demo page)</div>
+                </div>
+
+                <div class="card" style="margin-bottom:12px">
+                    <div style="margin-top:8px">
+                        <label class="small muted">Amount (USD)</label>
+                        <input type="text" id="pageWithdrawAmount" placeholder="e.g. 200" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Withdraw method</label>
+                        <select id="pageWithdrawMethod" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+                            <option value="bank">Bank Transfer</option>
+                            <option value="card">Card (Visa / MasterCard / Verve)</option>
+                            <option value="atm">ATM Payout</option>
+                        </select>
+                    </div>
+                    <div id="pageWithdrawCardFields" class="hidden" style="margin-top:8px">
+                        <label class="small muted">Card number</label>
+                        <input type="text" id="pageWithdrawCardNumber" placeholder="4242 4242 4242 4242" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                        <button class="btn ghost" id="pageCancelWithdraw">Cancel</button>
+                        <button class="btn" id="pageConfirmWithdraw">Request Withdraw</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section class="card hidden" data-section="settings">
+                <div class="header">
+                    <h2 style="margin:0">Settings</h2>
+                    <div class="muted">Personalize experience</div>
+                </div>
+
+                <div style="display:flex;gap:12px;align-items:center">
+                            <button class="btn ghost" id="editAccount" style="margin-top:8px">Edit</button>
+                            <button class="btn" id="fundAccountBtn" style="margin-top:8px">Fund Account</button>
+                            <button class="btn ghost" id="withdrawBtn" style="margin-top:8px">Withdraw</button>
+                        <div style="font-weight:700" id="themeLabel">Light</div>
+                    </div>
+                    <div class="right">
+                <div id="txHistoryCard" class="card" style="margin-top:12px">
+                    <div class="small muted">Transactions</div>
+                    <div id="txList" style="max-height:180px;overflow:auto" class="small muted">No transactions yet</div>
+                </div>
+                        <button class="btn" id="toggleDark">Toggle Dark Mode</button>
+                    </div>
+                </div>
+
+                
+
+                <div style="margin-top:16px">
+                    <div class="small muted">Danger zone</div>
+                    <div style="display:flex;gap:8px;margin-top:8px">
+                        <button class="btn ghost" id="deactivate">Deactivate Account</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <div id="debugBox" class="debug-box hidden">Debug: ready</div>
+
+    <!-- Modal Deactivate -->
+    <div id="modal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="modalBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <h3 id="modalTitle">Deactivate account</h3>
+                <p class="small muted">This will remove your local demo data. This action cannot be undone in this demo.</p>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="cancelDeactivate">Cancel</button>
+                    <button class="btn" id="confirmDeactivate">Deactivate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fund Account -->
+    <div id="fundModal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="fundModalBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fundModalTitle">
+                <h3 id="fundModalTitle">Fund Account</h3>
+                <p class="small muted">Enter an amount to add to your account (demo local balance).</p>
+                <div style="margin-top:8px">
+                    <label class="small muted">Amount (USD)</label>
+                    <input type="text" id="fundAmount" placeholder="e.g. 1000" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                </div>
+                <div style="margin-top:8px">
+                    <label class="small muted">Payment method</label>
+                    <select id="paymentMethod" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+                        <option value="card">Card (Visa / MasterCard / Verve)</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="atm">ATM / Cash</option>
+                    </select>
+                </div>
+                <div id="cardFields" class="hidden" style="margin-top:8px">
+                    <label class="small muted">Cardholder name</label>
+                    <input type="text" id="cardHolder" placeholder="As on card" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    <label class="small muted" style="margin-top:8px">Card number</label>
+                    <input type="text" id="cardNumber" placeholder="4242 4242 4242 4242" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    <div style="display:flex;gap:8px;margin-top:8px">
+                        <div style="flex:1">
+                            <label class="small muted">Expiry (MM/YY)</label>
+                            <input type="text" id="cardExpiry" placeholder="08/26" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                        </div>
+                        <div style="width:120px">
+                            <label class="small muted">CVV</label>
+                            <input type="text" id="cardCvv" placeholder="123" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="cancelFund">Cancel</button>
+                    <button class="btn" id="confirmFund">Add Funds</button>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Login Modal -->
+        <div id="loginModal" class="hidden" aria-hidden="true">
+            <div class="modal-backdrop" id="loginModalBackdrop">
+                <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+                    <h3 id="loginModalTitle">Login</h3>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Email</label>
+                        <input type="text" id="loginEmail" placeholder="you@example.com" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Password</label>
+                        <input type="password" id="loginPassword" placeholder="password" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+                        <a href="#" id="forgotLink" class="small muted">Forgot password?</a>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                        <button class="btn ghost" id="cancelLogin">Cancel</button>
+                        <button class="btn" id="confirmLogin">Login</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal (demo) -->
+        <div id="forgotModal" class="hidden" aria-hidden="true">
+            <div class="modal-backdrop" id="forgotModalBackdrop">
+                <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgotModalTitle">
+                    <h3 id="forgotModalTitle">Reset Password</h3>
+                    <p class="small muted">Enter your email and we'll simulate sending a reset link (demo).</p>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Email</label>
+                        <input type="text" id="forgotEmail" placeholder="you@example.com" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                        <button class="btn ghost" id="cancelForgot">Cancel</button>
+                        <button class="btn" id="confirmForgot">Send Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Trade Modal -->
+        <div id="tradeModal" class="hidden" aria-hidden="true">
+            <div class="modal-backdrop" id="tradeModalBackdrop">
+                <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tradeModalTitle">
+                    <h3 id="tradeModalTitle">Quick Trade (Demo)</h3>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Symbol</label>
+                        <input type="text" id="tradeSymbol" value="BTC" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="margin-top:8px">
+                        <label class="small muted">Amount</label>
+                        <input type="text" id="tradeAmount" placeholder="e.g. 0.1" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px">
+                        <button class="btn" id="tradeBuy">Buy</button>
+                        <button class="btn ghost" id="tradeSell">Sell</button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                        <button class="btn ghost" id="cancelTrade">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="withdrawModalBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="withdrawModalTitle">
+                <h3 id="withdrawModalTitle">Withdraw Funds</h3>
+                <p class="small muted">Request a withdrawal to your bank or card (demo). Funds are simulated locally.</p>
+                <div style="margin-top:8px">
+                    <label class="small muted">Amount (USD)</label>
+                    <input type="text" id="withdrawAmount" placeholder="e.g. 200" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                </div>
+                <div style="margin-top:8px">
+                    <label class="small muted">Withdraw method</label>
+                    <select id="withdrawMethod" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+                        <option value="bank">Bank Transfer</option>
+                        <option value="card">Card (Visa / MasterCard / Verve)</option>
+                        <option value="atm">ATM Payout</option>
+                    </select>
+                </div>
+                <div id="withdrawCardFields" class="hidden" style="margin-top:8px">
+                    <label class="small muted">Card number</label>
+                    <input type="text" id="withdrawCardNumber" placeholder="4242 4242 4242 4242" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="cancelWithdraw">Cancel</button>
+                    <button class="btn" id="confirmWithdraw">Request Withdraw</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="receiptModalBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
+                <h3 id="receiptModalTitle">Transaction Receipt</h3>
+                <div id="receiptBody" style="margin-top:8px" class="small muted">No receipt</div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="closeReceipt">Close</button>
+                    <button class="btn" id="downloadReceipt">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partial Close Modal -->
+    <!-- Partial Close Modal -->
+    <div id="partialCloseModal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="partialCloseBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="partialCloseTitle">
+                <h3 id="partialCloseTitle">Close Position</h3>
+                <div class="small muted" id="partialCloseInfo">Sell some or all of your position.</div>
+                <div style="margin-top:8px">
+                    <label class="small muted">Symbol</label>
+                    <div id="pc_symbol" style="font-weight:700;margin-top:6px"></div>
+                </div>
+                <div style="margin-top:8px">
+                    <label class="small muted">Amount to sell (or type ALL)</label>
+                    <input id="pc_amount" type="text" placeholder="e.g. 0.5 or ALL" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                </div>
+                <div style="margin-top:8px" class="small muted" id="pc_estimate">Estimated proceeds: $0.00</div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="pc_cancel">Cancel</button>
+                    <button class="btn" id="pc_confirm">Confirm Sell</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP (2FA) Modal -->
+    <div id="otpModal" class="hidden" aria-hidden="true">
+        <div class="modal-backdrop" id="otpModalBackdrop">
+            <div class="modal" role="dialog" aria-modal="true" aria-labelledby="otpModalTitle">
+                <h3 id="otpModalTitle">One-time Code (2FA)</h3>
+                <div style="margin-top:8px" class="small muted">Enter the 6-digit code sent to your email (demo shows code in toast).</div>
+                <div style="margin-top:8px">
+                    <input type="text" id="otpCode" placeholder="123456" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+                    <button class="btn ghost" id="cancelOtp">Cancel</button>
+                    <button class="btn" id="confirmOtp">Verify</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+                    <button class="btn ghost" id="resendOtp">Resend Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="hidden toast" role="status">Saved</div>
+
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Minimal utility
+        const $ = (sel, ctx=document) => ctx.querySelector(sel);
+        const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+
+        // App state keys
+        const STORAGE_USER = 'k9_user_v1';
+        const STORAGE_THEME = 'k9_theme_v1';
+        const STORAGE_CRYPTO = 'k9_crypto_v1';
+        const STORAGE_PROP = 'k9_prop_v1';
+        const STORAGE_TX = 'k9_tx_v1';
+
+        // Elements
+        const navLinks = $$('.nav-link');
+        const sections = $$('[data-section]');
+        const app = $('#app');
+        const toast = $('#toast');
+
+        // Navigation
+        // Navigation (intercept to optionally show ad before navigating)
+        function doNavigate(link, target){
+            navLinks.forEach(l=>l.classList.remove('active'));
+            link.classList.add('active');
+            sections.forEach(s=>s.classList.toggle('hidden', s.dataset.section !== target));
+        }
+
+        navLinks.forEach(link=>{
+            link.addEventListener('click', ()=>{
+                navLinks.forEach(l=>l.classList.remove('active'));
+                link.classList.add('active');
+                const target = link.dataset.target;
+                sections.forEach(s=>s.classList.toggle('hidden', s.dataset.section !== target));
+            });
+        });
+
+        // Theme
+        const applyTheme = (theme) => {
+            app.setAttribute('data-theme', theme==='dark' ? 'dark' : '');
+            $('#themeLabel').textContent = theme==='dark' ? 'Dark' : 'Light';
+            $('#toggleDarkMobile').textContent = 'Toggle Theme';
+            localStorage.setItem(STORAGE_THEME, theme);
+        };
+        const savedTheme = localStorage.getItem(STORAGE_THEME) || 'light';
+        applyTheme(savedTheme);
+
+        $('#toggleDark').addEventListener('click', ()=> applyTheme(app.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+        $('#toggleDarkMobile').addEventListener('click', ()=> $('#toggleDark').click());
+
+        // Toast helper
+        function showToast(msg='Saved', timeout=2000){
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(()=> toast.classList.add('hidden'), timeout);
+        }
+
+        // Load/save user (supports saved profile or demo session)
+        function loadUser(){
+            const data = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            if(data){
+                $('#user-label').textContent = data.fullName || (data.email || 'User');
+                $('#welcomeName').textContent = data.fullName || (data.email || 'Investor');
+                $('#infoName').textContent = data.fullName || '';
+                $('#infoEmail').textContent = data.email || '';
+                $('#infoPhone').textContent = data.phone || '';
+                $('#acctStatus').textContent = 'Active';
+                $('#infoStatus').textContent = 'Active';
+                $('#lastLogin').textContent = 'Local profile loaded';
+                $('#acctBalance').textContent = '$' + (Number(data.deposit || 0)).toLocaleString(undefined,{maximumFractionDigits:2});
+                updateAuthUI(true);
+                return data;
+            }
+            // fallback to a demo session (created by Login modal)
+            const session = JSON.parse(localStorage.getItem(STORAGE_SESSION) || 'null');
+            if(session){
+                const label = session.email || 'User';
+                $('#user-label').textContent = label;
+                $('#welcomeName').textContent = label.split('@')[0] || label;
+                $('#infoName').textContent = '';
+                $('#infoEmail').textContent = session.email || '';
+                $('#infoPhone').textContent = '';
+                $('#acctStatus').textContent = 'Signed In (demo)';
+                $('#infoStatus').textContent = 'Active';
+                $('#lastLogin').textContent = 'Signed in (demo)';
+                $('#acctBalance').textContent = '$0.00';
+                updateAuthUI(true);
+                return session;
+            }
+            // no user or session
+            $('#user-label').textContent = 'Guest';
+            $('#welcomeName').textContent = 'Investor';
+            $('#infoName').textContent = '';
+            $('#infoEmail').textContent = '';
+            $('#infoPhone').textContent = '';
+            $('#acctStatus').textContent = 'Not Created';
+            $('#infoStatus').textContent = 'No account';
+            $('#lastLogin').textContent = 'Not signed in';
+            $('#acctBalance').textContent = '$0.00';
+            updateAuthUI(false);
+            return null;
+        }
+
+        function saveUser(obj){
+            localStorage.setItem(STORAGE_USER, JSON.stringify(obj));
+            loadUser();
+            showToast('Account saved');
+        }
+
+        // Crypto storage
+        function loadCrypto(){
+            const arr = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            const list = $('#holdings');
+            if(arr.length===0){ list.innerHTML = '<div class="muted">No holdings yet</div>'; $('#cryptoVal').textContent = '$0.00'; return; }
+            list.innerHTML = arr.map(h=>`<div style="display:flex;justify-content:space-between;padding:6px 0"><div>${h.symbol} <span class="muted">(${h.amount})</span></div><div style="font-weight:700">$${(Number(h.amount)*Math.random()*30000).toFixed(2)}</div></div>`).join('');
+            const total = arr.reduce((s,h)=> s + Number(h.amount || 0) * (Math.random()*30000), 0);
+            $('#cryptoVal').textContent = '$' + total.toFixed(2);
+        }
+        function loadProps(){
+            const arr = JSON.parse(localStorage.getItem(STORAGE_PROP) || '[]');
+            const list = $('#properties');
+            if(arr.length===0){ list.innerHTML = '<div class="muted">No properties yet</div>'; $('#reVal').textContent = '$0.00'; return; }
+            list.innerHTML = arr.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0"><div>${p.address}</div><div style="font-weight:700">$${Number(p.value || 0).toLocaleString()}</div></div>`).join('');
+            const total = arr.reduce((s,p)=> s + Number(p.value || 0), 0);
+            $('#reVal').textContent = '$' + total.toLocaleString();
+        }
+
+        // Add crypto
+        $('#addCryptoForm').addEventListener('submit', e=> e.preventDefault());
+        $('#addCrypto').addEventListener('click', (e)=>{
+            e.preventDefault();
+            const s = $('#c_symbol').value.trim().toUpperCase();
+            const a = $('#c_amount').value.trim();
+            if(!s || isNaN(Number(a))){ showToast('Enter valid symbol and amount'); return; }
+            const arr = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            arr.push({symbol:s,amount:Number(a)});
+            localStorage.setItem(STORAGE_CRYPTO, JSON.stringify(arr));
+            $('#c_symbol').value=''; $('#c_amount').value='';
+            loadCrypto();
+            if(typeof updateChart === 'function') updateChart();
+            showToast('Holding added');
+        });
+
+        // Add property
+        $('#addPropForm').addEventListener('submit', e=> e.preventDefault());
+        $('#addProp').addEventListener('click', (e)=>{
+            e.preventDefault();
+            const addr = $('#p_address').value.trim();
+            const val = $('#p_value').value.trim().replace(/,/g,'');
+            if(!addr || isNaN(Number(val))){ showToast('Enter valid address and value'); return; }
+            const arr = JSON.parse(localStorage.getItem(STORAGE_PROP) || '[]');
+            arr.push({address:addr, value: Number(val)});
+            localStorage.setItem(STORAGE_PROP, JSON.stringify(arr));
+            $('#p_address').value=''; $('#p_value').value='';
+            loadProps();
+            if(typeof updateChart === 'function') updateChart();
+            showToast('Property added');
+        });
+
+        // Multistep form logic
+        let currentStep = 1;
+        const stepPanels = $$('.step-panel');
+        function showStep(n){
+            currentStep = n;
+            stepPanels.forEach(p=> p.classList.toggle('hidden', Number(p.dataset.step)!==n));
+            $$('.step').forEach(s=> s.classList.toggle('active', Number(s.dataset.step)===n));
+            $('#backStep').classList.toggle('hidden', n===1);
+            $('#nextStep').classList.toggle('hidden', n===3);
+            $('#submitCreate').classList.toggle('hidden', n!==3);
+        }
+        showStep(1);
+        $('#nextStep').addEventListener('click', ()=>{
+            // simple validation for step 1 and 2
+            if(currentStep===1){
+                if(!$('#fullName').value.trim() || !$('#email').value.trim()){ showToast('Please fill name and email'); return; }
+            }
+            if(currentStep===2){
+                const pw = $('#password').value, cp = $('#confirmPassword').value;
+                if(pw.length < 6 || pw !== cp){ showToast('Passwords must match and be at least 6 chars'); return; }
+            }
+            if(currentStep < 3) showStep(currentStep+1);
+        });
+        $('#backStep').addEventListener('click', ()=> { if(currentStep>1) showStep(currentStep-1); });
+
+        // Submit create account
+        $('#createForm').addEventListener('submit', (e)=>{
+            e.preventDefault();
+            // collect
+                        const html = `
+<div class="card" style="margin-top:12px">
+    <div class="small muted">Email (OTP) Webhook</div>
+    <div style="margin-top:8px">
+        <input id="emailWebhook" placeholder="https://your-server/send-email" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" value="${savedWebhook}" />
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+        <button class="btn ghost" id="clearWebhook">Clear</button>
+        <button class="btn" id="testWebhook">Test Webhook</button>
+        <button class="btn" id="saveWebhook">Save Webhook</button>
+    </div>
+    <div class="small muted" style="margin-top:8px">Enter a server endpoint that accepts POST JSON {to,subject,text} and sends email. Leave empty for demo (OTP shown in-app).</div>
+</div>
+`;
+            localStorage.setItem(STORAGE_USER, JSON.stringify(user));
+            loadUser();
+            // update some dashboard stats (demo)
+                        $('#testWebhook').addEventListener('click', async ()=>{
+                                const w = $('#emailWebhook').value.trim(); if(w) localStorage.setItem('k9_email_webhook', w);
+                                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null') || {};
+                                let to = (user.email || '').trim();
+                                if(!to) to = prompt('Enter email to send test to');
+                                if(!to){ showToast('No recipient provided'); return; }
+                                const payload = { to, subject: 'AJA Capital - Test Email', text: 'This is a test email from AJA Capital webhook.' };
+                                try{
+                                        const res = await fetch(w, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                                        if(res.ok) showToast('Test email sent'); else showToast('Test failed: ' + res.status);
+                                }catch(err){ console.warn('test webhook failed', err); showToast('Test failed'); }
+                        });
+            const deposit = user.deposit || 0;
+            $('#cryptoVal').textContent = '$' + (deposit * 0.6).toFixed(2);
+            $('#reVal').textContent = '$' + (deposit * 0.4).toFixed(2);
+            if(typeof updateChart === 'function') updateChart();
+            showToast('Account created');
+            // go to dashboard
+            $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='dashboard'));
+            sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'dashboard'));
+        });
+
+        // Quick create triggers create section
+        $('#quickCreate').addEventListener('click', ()=>{
+            $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='create'));
+            sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'create'));
+            showStep(1);
+        });
+        $('#openCreate').addEventListener('click', ()=> $('#quickCreate').click());
+
+        // Edit account (simple)
+        $('#editAccount').addEventListener('click', ()=>{
+            const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            if(!user){ showToast('No account to edit'); return; }
+            // prefill create form and navigate there
+            $('#fullName').value = user.fullName || '';
+            $('#email').value = user.email || '';
+            $('#phone').value = user.phone || '';
+            $('#country').value = user.country || '';
+            $('#prefCrypto').checked = !!(user.prefs && user.prefs.crypto);
+            $('#prefReal').checked = !!(user.prefs && user.prefs.real);
+            $('#deposit').value = user.deposit || '';
+            $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='create'));
+            sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'create'));
+            showStep(1);
+        });
+
+        // Deactivate modal
+        function openModal(){ $('#modal').classList.remove('hidden'); $('#modal').removeAttribute('aria-hidden'); }
+        function closeModal(){ $('#modal').classList.add('hidden'); $('#modal').setAttribute('aria-hidden','true'); }
+        $('#deactivate').addEventListener('click', openModal);
+        $('#cancelDeactivate').addEventListener('click', closeModal);
+        $('#modalBackdrop').addEventListener('click', (e)=>{
+            if(e.target === e.currentTarget) closeModal();
+        });
+        $('#confirmDeactivate').addEventListener('click', ()=>{
+            localStorage.removeItem(STORAGE_USER);
+            localStorage.removeItem(STORAGE_CRYPTO);
+            localStorage.removeItem(STORAGE_PROP);
+            showToast('Account deactivated');
+            closeModal();
+            setTimeout(()=> location.reload(), 700);
+        });
+
+        // Ads removed: ad modal, test/reset, and auto-continue logic deleted
+
+        // Fund account modal logic
+        function openFundModal(){
+            $('#fundModal').classList.remove('hidden');
+            $('#fundModal').removeAttribute('aria-hidden');
+            $('#fundAmount').value = '';
+            setTimeout(()=> $('#fundAmount').focus(), 120);
+        }
+        function closeFundModal(){
+            $('#fundModal').classList.add('hidden');
+            $('#fundModal').setAttribute('aria-hidden','true');
+        }
+
+        $('#fundAccountBtn').addEventListener('click', ()=> openFundModal());
+        $('#cancelFund').addEventListener('click', ()=> closeFundModal());
+        $('#fundModalBackdrop').addEventListener('click', (e)=>{ if(e.target === e.currentTarget) closeFundModal(); });
+
+        async function fundAccount(amount, method='card', details={}){
+            const n = Number(amount);
+            if(isNaN(n) || n <= 0){ showToast('Enter a valid amount'); return false; }
+            const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            if(!user){ showToast('No account to fund'); closeFundModal(); return false; }
+            // simulate processing delay and possible failure for card payments
+            let status = 'SUCCESS';
+            let message = '';
+            if(method === 'card'){
+                // simulate network/processing delay
+                await new Promise(r=> setTimeout(r, 800));
+                const ok = Math.random() > 0.05; // 95% success
+                if(!ok){ status = 'FAILED'; message = 'Card declined (simulated)'; }
+            }
+            // if success, apply deposit
+            if(status === 'SUCCESS'){
+                user.deposit = (Number(user.deposit || 0) + n);
+                localStorage.setItem(STORAGE_USER, JSON.stringify(user));
+                loadUser();
+                // add to dashboard values (demo): 60% crypto, 40% real estate
+                const c = parseCurrency($('#cryptoVal').textContent || '0') + n * 0.6;
+                const r = parseCurrency($('#reVal').textContent || '0') + n * 0.4;
+                $('#cryptoVal').textContent = '$' + c.toFixed(2);
+                $('#reVal').textContent = '$' + r.toLocaleString();
+                if(typeof updateChart === 'function') updateChart();
+            }
+            // record transaction with status
+            const tx = { time: new Date().toLocaleString(), type: status === 'SUCCESS' ? 'DEPOSIT' : 'DEPOSIT_FAILED', method: method, amount: n, details: details, status, message };
+            const txs = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]'); txs.unshift(tx); localStorage.setItem(STORAGE_TX, JSON.stringify(txs)); renderTransactions();
+            // show receipt/notification
+            showReceipt(tx);
+            if(status === 'SUCCESS') showToast('Funds added: $' + n.toFixed(2)); else showToast(message || 'Deposit failed');
+            closeFundModal();
+            return status === 'SUCCESS';
+        }
+
+        $('#confirmFund').addEventListener('click', async ()=>{
+            const amt = $('#fundAmount').value.trim().replace(/,/g,'');
+            const method = $('#paymentMethod') ? $('#paymentMethod').value : 'card';
+            // if card selected, validate basic fields
+            if(method === 'card'){
+                const holder = $('#cardHolder').value.trim(); const num = $('#cardNumber').value.replace(/\s+/g,''); const exp = $('#cardExpiry').value.trim(); const cvv = $('#cardCvv').value.trim();
+                if(!holder || !num || num.length < 12 || !exp || !cvv){ showToast('Enter valid card details'); return; }
+                const cardType = num.startsWith('4') ? 'Visa' : (num.startsWith('5') ? 'MasterCard' : (num.startsWith('506')||num.startsWith('507') ? 'Verve' : 'Card'));
+                const details = { cardHolder: holder, cardNumber: '**** **** **** ' + num.slice(-4), cardType };
+                // require OTP for high-value deposit
+                const threshold = 500;
+                if(Number(amt) >= threshold){ openOtpModal({ type:'deposit', amount: amt, method, details }); return; }
+                await fundAccount(amt, method, details);
+            } else {
+                // bank/atm
+                const threshold = 500;
+                if(Number(amt) >= threshold){ openOtpModal({ type:'deposit', amount: amt, method, details: {} }); return; }
+                await fundAccount(amt, method, {});
+            }
+        });
+
+        // Initialize
+        loadUser();
+        loadProps();
+
+        // Live graph charts: crypto (from CoinGecko) + simulated real estate + portfolio time-series
+        let portfolioChart = null;
+        const parseCurrency = (str) => Number((str||'').toString().replace(/[^0-9.-]+/g,'')||0);
+
+        // Time-series history buffers
+        const historyLength = 120; // number of points shown
+        const labels = [];
+        const cryptoHistory = [];
+        const reHistory = [];
+        const totalHistory = [];
+
+        function initPortfolioChart(){
+            const el = document.getElementById('portfolioChart');
+            if(!el) return;
+            const ctx = el.getContext('2d');
+            portfolioChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(historyLength).fill(''),
+                    datasets: [
+                        { label: 'Crypto Value', data: Array(historyLength).fill(null), borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.06)', fill:true, tension:0.2 },
+                        { label: 'Real Estate Value', data: Array(historyLength).fill(null), borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.06)', fill:true, tension:0.2 },
+                        { label: 'Total Portfolio', data: Array(historyLength).fill(null), borderColor: '#111827', backgroundColor: 'rgba(17,24,39,0.06)', fill:true, tension:0.2 }
+                    ]
+                },
+                options: { animation:false, responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}}, scales:{ x:{display:false} }
+                }
+            });
+        }
+
+        function pushHistoryPoint(cryptoVal, reVal){
+            const total = cryptoVal + reVal;
+            const label = new Date().toLocaleTimeString();
+            // maintain arrays
+            if(labels.length >= historyLength){ labels.shift(); cryptoHistory.shift(); reHistory.shift(); totalHistory.shift(); }
+            labels.push(label); cryptoHistory.push(cryptoVal); reHistory.push(reVal); totalHistory.push(total);
+            if(portfolioChart){
+                portfolioChart.data.labels = labels.slice();
+                portfolioChart.data.datasets[0].data = cryptoHistory.slice();
+                portfolioChart.data.datasets[1].data = reHistory.slice();
+                portfolioChart.data.datasets[2].data = totalHistory.slice();
+                portfolioChart.update('none');
+            }
+        }
+
+        // Initialize portfolio chart
+        initPortfolioChart();
+
+        // Compute current crypto and real estate values
+        function computeCurrentValues(){
+            // Crypto: sum holdings; BTC uses currentPrice, others approximate
+            const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            let cryptoVal = 0;
+            holdings.forEach(h=>{
+                const amt = Number(h.amount || 0);
+                if(!amt) return;
+                if((h.symbol||'').toUpperCase() === 'BTC') cryptoVal += amt * currentPrice;
+                else cryptoVal += amt * (currentPrice * 0.05 * (Math.random()*1.4));
+            });
+
+            // Real estate: sum property values multiplied by a simulated index
+            const props = JSON.parse(localStorage.getItem(STORAGE_PROP) || '[]');
+            const baseRE = props.reduce((s,p)=> s + Number(p.value || 0), 0);
+            const reVal = baseRE * (typeof reIndex !== 'undefined' ? reIndex : 1);
+
+            return { cryptoVal, reVal };
+        }
+
+        // Backwards-compatible updateChart used by various handlers: update DOM and append a history point
+        function updateChart(){
+            const vals = computeCurrentValues();
+            $('#cryptoVal').textContent = '$' + (vals.cryptoVal || 0).toFixed(2);
+            $('#reVal').textContent = '$' + (Math.round((vals.reVal||0)).toLocaleString());
+            pushHistoryPoint(vals.cryptoVal||0, vals.reVal||0);
+        }
+
+        // Compute P&L per symbol using FIFO cost-basis for realized P&L
+        async function computePnL(){
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || '[]') || [];
+            const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]') || [];
+            const symbols = new Set(orders.map(o=>o.symbol).concat(holdings.map(h=>h.symbol)));
+            const results = [];
+            for(const sym of Array.from(symbols)){
+                const symOrders = orders.filter(o=>o.symbol===sym).sort((a,b)=> new Date(a.time) - new Date(b.time));
+                const buyLots = [];
+                let realized = 0;
+                for(const o of symOrders){
+                    const qty = Number(o.qty || 0);
+                    const price = Number(o.price || 0);
+                    if(o.type === 'BUY'){
+                        buyLots.push({qty, price});
+                    } else if(o.type === 'SELL'){
+                        let remaining = qty;
+                        while(remaining > 0 && buyLots.length){
+                            const lot = buyLots[0];
+                            const take = Math.min(remaining, lot.qty);
+                            realized += take * (price - lot.price);
+                            lot.qty -= take;
+                            remaining -= take;
+                            if(lot.qty <= 0) buyLots.shift();
+                        }
+                        // If selling more than bought (short), treat remaining as negative realized on assumption of zero cost basis
+                        if(remaining > 0){
+                            realized += remaining * price * 1; // conservative placeholder
+                        }
+                    }
+                }
+                const remainingQty = buyLots.reduce((s,l)=> s + l.qty, 0);
+                const totalCost = buyLots.reduce((s,l)=> s + l.qty * l.price, 0);
+                const avgCost = remainingQty ? (totalCost / remainingQty) : 0;
+                let market = await getPriceForSymbol(sym).catch(()=>0);
+                market = Number(market || 0);
+                const unrealized = remainingQty * (market - avgCost);
+                results.push({symbol: sym, qty: remainingQty, avgCost: avgCost, market: market, unrealized: unrealized, realized: realized});
+            }
+            return results;
+        }
+
+        // Render P&L table (creates DOM if needed)
+        async function renderPnL(){
+            if(!document.getElementById('pnlCard')){
+                const html = `\n<div id="pnlCard" class="card alt" style="margin:10px 0;">\n  <h3>Portfolio P&L</h3>\n  <table id="pnlTable" style="width:100%;border-collapse:collapse;">\n    <thead><tr><th style="text-align:left">Symbol</th><th>Qty</th><th>Avg Cost</th><th>Market</th><th>Unrealized</th><th>Realized</th></tr></thead>\n    <tbody></tbody>\n  </table>\n</div>\n`;
+                const btn = document.getElementById('exportBtn');
+                if(btn) btn.insertAdjacentHTML('beforebegin', html);
+                else document.body.insertAdjacentHTML('beforeend', html);
+            }
+            const rows = await computePnL();
+            const tbody = document.querySelector('#pnlTable tbody');
+            tbody.innerHTML = '';
+            let totalUnreal = 0, totalReal = 0;
+            for(const r of rows){
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.symbol}</td><td style="text-align:right">${r.qty.toFixed(6)}</td><td style="text-align:right">$${r.avgCost.toFixed(2)}</td><td style="text-align:right">$${r.market.toFixed(2)}</td><td style="text-align:right">$${r.unrealized.toFixed(2)}</td><td style="text-align:right">$${r.realized.toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+                totalUnreal += r.unrealized; totalReal += r.realized;
+            }
+            const tr = document.createElement('tr');
+            tr.style.fontWeight = 'bold';
+            tr.innerHTML = `<td>Total</td><td></td><td></td><td></td><td style="text-align:right">$${totalUnreal.toFixed(2)}</td><td style="text-align:right">$${totalReal.toFixed(2)}</td>`;
+            tbody.appendChild(tr);
+        }
+
+        // CSV helper and export including P&L
+        function convertToCSV(rows){
+            return rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+        }
+        $('#exportBtn').addEventListener('click', async ()=>{
+            const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            const props = JSON.parse(localStorage.getItem(STORAGE_PROP) || '[]');
+            const orders = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || '[]');
+            const txs = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]');
+            const pnl = await computePnL();
+            const rows = [];
+            rows.push(['Holdings']); rows.push(['Symbol','Amount']); holdings.forEach(h=> rows.push([h.symbol, h.amount])); rows.push([]);
+            rows.push(['Properties']); rows.push(['Address','Value']); props.forEach(p=> rows.push([p.address || '', p.value || ''])); rows.push([]);
+            rows.push(['Orders']); rows.push(['Date','Type','Symbol','Qty','Price','Amount']); orders.forEach(o=> rows.push([o.time,o.type,o.symbol,o.qty,o.price,o.amount])); rows.push([]);
+            rows.push(['Transactions']); rows.push(['Date','Type','Method','Amount','Status','Details']); txs.forEach(t=> rows.push([t.time, t.type, t.method, t.amount, t.status || '', t.details && t.details.cardNumber ? t.details.cardNumber : (t.message||'')])); rows.push([]);
+            rows.push(['P&L']); rows.push(['Symbol','Qty','AvgCost','Market','Unrealized','Realized']); pnl.forEach(p=> rows.push([p.symbol, p.qty, p.avgCost.toFixed(2), p.market.toFixed(2), p.unrealized.toFixed(2), p.realized.toFixed(2)]));
+            const csv = convertToCSV(rows);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'k9_portfolio_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        });
+
+        // Keep P&L updated after chart/holdings/orders change
+        window.addEventListener('storage', (e)=>{ if([STORAGE_ORDERS,STORAGE_CRYPTO].includes(e.key)) renderPnL(); });
+        // ensure initial render
+        setTimeout(()=>renderPnL(), 500);
+
+        // Market news (demo)
+        const demoHeadlines = [
+            'Global markets mixed as tech stocks steady',
+            'Real estate demand rising in suburban areas',
+            'Top 5 crypto tokens to watch this quarter',
+            'Inflation cools, analysts expect rate pause',
+            'How diversification helped portfolios in downturns'
+        ];
+
+        function populateNews(){
+            const container = $('#newsList');
+            const shuffled = demoHeadlines.sort(()=> 0.5 - Math.random()).slice(0,4);
+            container.innerHTML = shuffled.map(h=> `<div style="padding:8px 0;border-bottom:1px dashed rgba(0,0,0,0.04)"><strong>${h}</strong><div class="small muted">Summary: Brief demo headline for the dashboard.</div></div>`).join('');
+        }
+
+        $('#refreshNews').addEventListener('click', ()=>{ populateNews(); showToast('News refreshed'); });
+        // initial news
+        populateNews();
+
+        // --- Login & Forgot Password (demo) ---
+        const STORAGE_SESSION = 'k9_session_v1';
+        function openLoginModal(){ $('#loginModal').classList.remove('hidden'); $('#loginModal').removeAttribute('aria-hidden'); }
+        function closeLoginModal(){ $('#loginModal').classList.add('hidden'); $('#loginModal').setAttribute('aria-hidden','true'); }
+        function openForgotModal(){ $('#forgotModal').classList.remove('hidden'); $('#forgotModal').removeAttribute('aria-hidden'); }
+        function closeForgotModal(){ $('#forgotModal').classList.add('hidden'); $('#forgotModal').setAttribute('aria-hidden','true'); }
+
+        $('#openLogin').addEventListener('click', ()=> openLoginModal());
+        $('#cancelLogin').addEventListener('click', ()=> closeLoginModal());
+        $('#forgotLink').addEventListener('click', (e)=>{ e.preventDefault(); closeLoginModal(); openForgotModal(); });
+        $('#cancelForgot').addEventListener('click', ()=> closeForgotModal());
+
+        $('#confirmForgot').addEventListener('click', ()=>{
+            const email = $('#forgotEmail').value.trim();
+            if(!email){ showToast('Enter your email'); return; }
+            // demo: just show toast
+            showToast('Password reset link (simulated) sent to ' + email);
+            closeForgotModal();
+        });
+
+        $('#confirmLogin').addEventListener('click', ()=>{
+            const email = $('#loginEmail').value.trim();
+            const pass = $('#loginPassword').value;
+            if(!email || !pass){ showToast('Enter email and password'); return; }
+            // demo session: store email only
+            const session = { email: email, loggedAt: new Date().toISOString() };
+            localStorage.setItem(STORAGE_SESSION, JSON.stringify(session));
+            $('#lastLogin').textContent = 'Signed in as ' + email;
+            showToast('Signed in (demo)');
+            closeLoginModal();
+            loadUser();
+        });
+
+        // Transactions: render list in Account Info
+        function renderTransactions(){
+            const txs = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]');
+            const el = $('#txList');
+            if(!el) return;
+            if(!txs || txs.length===0){ el.innerHTML = '<div class="muted">No transactions yet</div>'; return; }
+            el.innerHTML = txs.map(t=>{
+                const statusLabel = t.status ? ` <span class="small muted">[${t.status}]</span>` : '';
+                const cardInfo = t.details && (t.details.cardType || t.details.cardNumber) ? `<div class="small muted">${t.details.cardType ? t.details.cardType + ' • ' : ''}${t.details.cardNumber||''}</div>` : '';
+                const msg = t.message ? `<div class="small muted">${t.message}</div>` : '';
+                return `<div style="padding:8px;border-bottom:1px dashed rgba(0,0,0,0.04)"><div style="display:flex;justify-content:space-between"><div><strong>${t.type}</strong> <span class="muted">(${t.method})</span>${statusLabel}${cardInfo}${msg}</div><div style="font-weight:700">$${Number(t.amount).toLocaleString(undefined,{maximumFractionDigits:2})}</div></div><div class="small muted">${t.time}</div></div>`;
+            }).join('');
+        }
+        renderTransactions();
+
+        // OTP (2FA) helpers
+        window._k9_pendingTx = null;
+        function generateOtp(){
+            const code = String(Math.floor(100000 + Math.random()*900000));
+            sessionStorage.setItem('k9_otp_code', code);
+            sessionStorage.setItem('k9_otp_expires', String(Date.now() + 2*60*1000)); // 2 minutes
+            // attempt to send via configured webhook if available
+            const webhook = localStorage.getItem('k9_email_webhook');
+            const toEmail = (JSON.parse(localStorage.getItem(STORAGE_USER) || 'null') || {}).email || '';
+            const payload = { to: toEmail, subject: 'Your K9 Unit OTP', text: 'Your verification code: ' + code };
+            if(webhook && toEmail){
+                // POST to webhook; caller must provide a server that sends email
+                fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+                    .then(r=>{
+                        if(!r.ok) throw new Error('webhook failed');
+                        showToast('OTP sent to ' + toEmail, 3000);
+                    }).catch(err=>{
+                        console.warn('OTP webhook failed', err);
+                        // fallback: show in toast for demo
+                        showToast('Demo OTP: ' + code, 4000);
+                    });
+            } else {
+                // fallback to demo toast if no webhook configured
+                showToast('Demo OTP: ' + code, 4000);
+            }
+            return code;
+        }
+        function openOtpModal(pending){
+            window._k9_pendingTx = pending;
+            generateOtp();
+            $('#otpModal').classList.remove('hidden'); $('#otpModal').removeAttribute('aria-hidden');
+            $('#otpCode').value = '';
+            setTimeout(()=> $('#otpCode').focus(), 120);
+        }
+        function closeOtpModal(){ $('#otpModal').classList.add('hidden'); $('#otpModal').setAttribute('aria-hidden','true'); }
+
+        $('#cancelOtp').addEventListener('click', ()=>{ window._k9_pendingTx = null; closeOtpModal(); });
+        $('#resendOtp').addEventListener('click', ()=>{ generateOtp(); showToast('OTP resent (demo)'); });
+
+        $('#confirmOtp').addEventListener('click', async ()=>{
+            const entered = $('#otpCode').value.trim();
+            const code = sessionStorage.getItem('k9_otp_code');
+            const exp = Number(sessionStorage.getItem('k9_otp_expires') || 0);
+            if(!code || Date.now() > exp){ showToast('Code expired — resend'); return; }
+            if(entered !== code){ showToast('Invalid code'); return; }
+            // verified, proceed with pending transaction
+            const pending = window._k9_pendingTx; window._k9_pendingTx = null; closeOtpModal();
+            if(!pending) return;
+            if(pending.type === 'deposit'){
+                await fundAccount(pending.amount, pending.method, pending.details);
+            } else if(pending.type === 'withdraw'){
+                await performWithdraw(pending.amount, pending.method, pending.details);
+            }
+            // clear OTP
+            sessionStorage.removeItem('k9_otp_code'); sessionStorage.removeItem('k9_otp_expires');
+        });
+
+        // Page withdraw handlers (non-modal)
+        $('#pageWithdrawMethod').addEventListener('change', ()=>{ const m = $('#pageWithdrawMethod').value; $('#pageWithdrawCardFields').classList.toggle('hidden', m!=='card'); });
+        $('#pageCancelWithdraw').addEventListener('click', ()=>{
+            // go back to dashboard
+            $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='dashboard'));
+            sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'dashboard'));
+        });
+        $('#pageConfirmWithdraw').addEventListener('click', async ()=>{
+            const amt = Number($('#pageWithdrawAmount').value.trim().replace(/,/g,''));
+            const m = $('#pageWithdrawMethod').value;
+            if(isNaN(amt) || amt <= 0){ showToast('Enter a valid amount'); return; }
+            const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            const bal = Number((user && user.deposit) || 0);
+            if(amt > bal){ showToast('Insufficient funds'); return; }
+            let details = {};
+            if(m === 'card'){
+                const num = $('#pageWithdrawCardNumber').value.replace(/\s+/g,''); if(!num || num.length < 12){ showToast('Enter valid card number'); return; }
+                details.cardNumber = '**** **** **** ' + num.slice(-4);
+            }
+            const threshold = 500;
+            if(amt >= threshold){ openOtpModal({ type: 'withdraw', amount: amt, method: m, details }); return; }
+            await performWithdraw(amt, m, details);
+        });
+
+        // Receipt modal helpers
+        function showReceipt(tx){
+            const el = $('#receiptBody');
+            if(!el) return;
+            const lines = [];
+            lines.push(`Type: ${tx.type}`);
+            lines.push(`Method: ${tx.method}`);
+            lines.push(`Amount: $${Number(tx.amount).toFixed(2)}`);
+            if(tx.status) lines.push(`Status: ${tx.status}`);
+            if(tx.message) lines.push(`Message: ${tx.message}`);
+            if(tx.details && tx.details.cardNumber) lines.push(`Card: ${tx.details.cardNumber}`);
+            el.innerHTML = '<pre style="white-space:pre-wrap">' + lines.join('\n') + '</pre>';
+            $('#receiptModal').classList.remove('hidden'); $('#receiptModal').removeAttribute('aria-hidden');
+            // wire download
+            $('#downloadReceipt').onclick = ()=>{
+                const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'k9_receipt.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            };
+            // attempt to send receipt to configured webhook/email and notify user of result
+            try{
+                sendReceiptEmail(tx, lines.join('\n')).then(ok=>{
+                    if(ok) showToast('Receipt emailed');
+                    else showToast('Receipt not sent — check webhook or server');
+                }).catch(e=>{ console.warn('sendReceiptEmail failed', e); showToast('Receipt send failed'); });
+            }catch(e){ console.warn('sendReceiptEmail failed', e); }
+        }
+        $('#closeReceipt').addEventListener('click', ()=>{ $('#receiptModal').classList.add('hidden'); $('#receiptModal').setAttribute('aria-hidden','true'); });
+
+        // --- Live Coin Chart + Tick Loop ---
+        const priceCtx = document.getElementById('cryptoPriceChart') ? document.getElementById('cryptoPriceChart').getContext('2d') : null;
+        let priceChart = null;
+        const priceWindow = 120;
+        const priceData = [];
+        // selected coin for the live chart
+        let selectedCoin = 'BTC';
+        let reIndex = 1.0; // real-estate multiplier
+
+        function initPriceData(startPrice=30000){ priceData.length = 0; for(let i=0;i<priceWindow;i++){ priceData.push(startPrice + (Math.random()-0.5)* (startPrice*0.01)); } }
+        function initPriceChart(){ if(!priceCtx) return; priceChart = new Chart(priceCtx, { type:'line', data:{ labels: Array(priceWindow).fill(''), datasets:[{ label:selectedCoin, data: priceData.slice(), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.08)', pointRadius:0 }] }, options:{ animation:false, responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} } }); }
+
+        function updatePriceChart(){ if(!priceChart) return; priceChart.data.datasets[0].data = priceData.slice(); priceChart.data.datasets[0].label = selectedCoin; priceChart.update('none'); }
+
+        // per-second tick: fetch price for selectedCoin, update chart, RE index, SMA signal, and portfolio history
+        async function tickPrice(){
+            try{
+                // fetch price for selected coin
+                const p = await getPriceForSymbol(selectedCoin).catch(()=>null);
+                const price = Number(p || priceData[priceData.length-1] || 100);
+                priceData.push(price);
+                if(priceData.length > priceWindow) priceData.shift();
+                updatePriceChart();
+
+                // RE index small drift
+                reIndex = reIndex * (1 + (Math.random()-0.5) * 0.0008);
+
+                // SMA & AI signal
+                const smaN = 20;
+                const recent = priceData.slice(-smaN);
+                const sma = recent.reduce((s,v)=>s+v,0)/recent.length || price;
+                const signalEl = $('#aiSignal');
+                if(signalEl){
+                    let signal = 'HOLD';
+                    if(price > sma*1.002) { signal = 'BUY'; signalEl.textContent = 'AI: BUY'; signalEl.style.color = 'var(--success)'; }
+                    else if(price < sma*0.998){ signal = 'SELL'; signalEl.textContent = 'AI: SELL'; signalEl.style.color = 'var(--danger)'; }
+                    else { signal = 'HOLD'; signalEl.textContent = 'AI: HOLD'; signalEl.style.color = 'var(--muted)'; }
+                    // send alert on signal change
+                    try{
+                        if(typeof _lastSignal === 'undefined') _lastSignal = null;
+                        if(signal !== _lastSignal){
+                            // send async alert (fire and forget but log result)
+                            sendPriceAlert(signal, selectedCoin, price).then(ok=>{
+                                if(ok) console.log('Alert sent:', signal, selectedCoin); else console.log('Alert not sent');
+                            }).catch(e=> console.warn('Alert send error', e));
+                            _lastSignal = signal;
+                        }
+                    }catch(e){ console.warn('signal alert error', e); }
+                }
+
+                // update portfolio values and history
+                const vals = computeCurrentValues();
+                $('#cryptoVal').textContent = '$' + (vals.cryptoVal || 0).toFixed(2);
+                $('#reVal').textContent = '$' + (Math.round((vals.reVal||0)).toLocaleString());
+                pushHistoryPoint(vals.cryptoVal||0, vals.reVal||0);
+                // update balance badge
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+                if(user) $('#balanceBadge').textContent = 'Balance: $' + Number(user.deposit || 0).toLocaleString(undefined,{maximumFractionDigits:2});
+                // refresh dashboard market & breakdown occasionally
+                try{ if(typeof renderDashboardMarketList === 'function') renderDashboardMarketList(); if(typeof renderCryptoBreakdown === 'function') renderCryptoBreakdown(); }catch(e){}
+            }catch(err){ console.warn('tickPrice error', err); }
+        }
+
+        initPriceData(); initPriceChart();
+        setInterval(()=> { tickPrice(); }, 1000);
+
+        // Fetch live crypto price from CoinGecko every 5 seconds (falls back to simulation on error)
+        async function fetchLiveCrypto(){
+            try{
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                if(!res.ok) throw new Error('fetch failed');
+                const json = await res.json();
+                const p = json && json.bitcoin && json.bitcoin.usd;
+                if(p && typeof p === 'number'){
+                    // set currentPrice to fetched value (smooth by small step)
+                    currentPrice = Number(p);
+                }
+            }catch(err){
+                // network or API failed - keep simulation
+                console.warn('CoinGecko fetch failed, using simulated price', err);
+            }
+        }
+        // initial fetch and periodic updates
+        fetchLiveCrypto();
+        setInterval(()=> fetchLiveCrypto(), 5000);
+
+        // --- Trading (quick trade) ---
+        function openTradeModal(){ $('#tradeModal').classList.remove('hidden'); $('#tradeModal').removeAttribute('aria-hidden'); $('#tradeAmount').value=''; $('#tradeSymbol').value='BTC'; }
+        function closeTradeModal(){ $('#tradeModal').classList.add('hidden'); $('#tradeModal').setAttribute('aria-hidden','true'); }
+        $('#openTrade').addEventListener('click', ()=> openTradeModal());
+        $('#cancelTrade').addEventListener('click', ()=> closeTradeModal());
+
+        function getHoldings(){ return JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]'); }
+        function saveHoldings(arr){ localStorage.setItem(STORAGE_CRYPTO, JSON.stringify(arr)); loadCrypto(); if(typeof updateChart === 'function') updateChart(); renderOrders(); }
+
+        // Orders storage and rendering
+        const STORAGE_ORDERS = 'k9_orders_v1';
+        function addOrder(o){ const arr = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || '[]'); arr.unshift(o); localStorage.setItem(STORAGE_ORDERS, JSON.stringify(arr)); renderOrders(); }
+        function renderOrders(){ const arr = JSON.parse(localStorage.getItem(STORAGE_ORDERS) || '[]'); const tbody = $('#ordersTbody'); if(!tbody) return; tbody.innerHTML = arr.map(o=>`<tr><td style="padding:6px">${o.time}</td><td style="padding:6px">${o.type}</td><td style="padding:6px">${o.symbol}</td><td style="padding:6px;text-align:right">${o.qty}</td><td style="padding:6px;text-align:right">$${Number(o.price).toLocaleString()}</td><td style="padding:6px;text-align:right">$${Number(o.amount).toLocaleString()}</td></tr>`).join(''); }
+        renderOrders();
+
+        $('#tradeBuy').addEventListener('click', async ()=>{
+            const sym = $('#tradeSymbol').value.trim().toUpperCase(); const amt = Number($('#tradeAmount').value.trim()); if(!sym || isNaN(amt) || amt<=0){ showToast('Enter valid symbol and amount'); return; }
+            // get price for symbol
+            const price = await getPriceForSymbol(sym);
+            const arr = getHoldings(); const idx = arr.findIndex(x=>x.symbol===sym);
+            if(idx>=0) arr[idx].amount = Number(arr[idx].amount) + amt; else arr.push({symbol:sym, amount: amt});
+            saveHoldings(arr);
+            const order = { time: new Date().toLocaleString(), type:'BUY', symbol: sym, qty: amt, price: price, amount: (price*amt).toFixed(2) };
+            addOrder(order);
+            showToast('Bought ' + amt + ' ' + sym + ' (demo)'); closeTradeModal();
+        });
+
+        $('#tradeSell').addEventListener('click', async ()=>{
+            const sym = $('#tradeSymbol').value.trim().toUpperCase(); const amt = Number($('#tradeAmount').value.trim()); if(!sym || isNaN(amt) || amt<=0){ showToast('Enter valid symbol and amount'); return; }
+            const arr = getHoldings(); const idx = arr.findIndex(x=>x.symbol===sym);
+            if(idx<0){ showToast('No holdings to sell'); return; }
+            if(arr[idx].amount < amt){ showToast('Not enough holdings'); return; }
+            const price = await getPriceForSymbol(sym);
+            arr[idx].amount = Number(arr[idx].amount) - amt; if(arr[idx].amount <= 0) arr.splice(idx,1);
+            saveHoldings(arr);
+            const order = { time: new Date().toLocaleString(), type:'SELL', symbol: sym, qty: amt, price: price, amount: (price*amt).toFixed(2) };
+            addOrder(order);
+            showToast('Sold ' + amt + ' ' + sym + ' (demo)'); closeTradeModal();
+        });
+
+        // Withdraw modal handlers
+        function openWithdrawModal(){ $('#withdrawModal').classList.remove('hidden'); $('#withdrawModal').removeAttribute('aria-hidden'); $('#withdrawAmount').value=''; }
+        function closeWithdrawModal(){ $('#withdrawModal').classList.add('hidden'); $('#withdrawModal').setAttribute('aria-hidden','true'); }
+        $('#withdrawBtn').addEventListener('click', ()=> openWithdrawModal());
+        $('#cancelWithdraw').addEventListener('click', ()=> closeWithdrawModal());
+        $('#withdrawModalBackdrop').addEventListener('click', (e)=>{ if(e.target === e.currentTarget) closeWithdrawModal(); });
+
+        $('#withdrawMethod').addEventListener('change', ()=>{
+            const m = $('#withdrawMethod').value;
+            $('#withdrawCardFields').classList.toggle('hidden', m!=='card');
+        });
+
+        $('#confirmWithdraw').addEventListener('click', async ()=>{
+            const amt = Number($('#withdrawAmount').value.trim().replace(/,/g,''));
+            const m = $('#withdrawMethod').value;
+            if(isNaN(amt) || amt <= 0){ showToast('Enter valid amount'); return; }
+            const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            const bal = Number((user && user.deposit) || 0);
+            if(amt > bal){ showToast('Insufficient funds'); return; }
+            // if card, validate card number presence
+            let details = {};
+            if(m === 'card'){
+                const num = $('#withdrawCardNumber').value.replace(/\s+/g,''); if(!num || num.length < 12){ showToast('Enter valid card number'); return; }
+                details.cardNumber = '**** **** **** ' + num.slice(-4);
+            }
+            // require OTP for high-value withdrawals
+            const threshold = 500;
+            if(amt >= threshold){
+                openOtpModal({ type: 'withdraw', amount: amt, method: m, details });
+                return;
+            }
+            // otherwise perform directly
+            await performWithdraw(amt, m, details);
+        });
+
+        // Perform withdraw logic extracted so OTP path can call it
+        async function performWithdraw(amt, m, details){
+            const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+            const bal = Number((user && user.deposit) || 0);
+            let status = 'SUCCESS'; let message = '';
+            if(m === 'card'){
+                await new Promise(r=> setTimeout(r, 800));
+                const ok = Math.random() > 0.05;
+                if(!ok){ status = 'FAILED'; message = 'Withdrawal declined (simulated)'; }
+            }
+            if(status === 'SUCCESS'){
+                if(user){ user.deposit = bal - amt; localStorage.setItem(STORAGE_USER, JSON.stringify(user)); }
+            }
+            const tx = { time: new Date().toLocaleString(), type: status === 'SUCCESS' ? 'WITHDRAW' : 'WITHDRAW_FAILED', method: m, amount: amt, details, status, message };
+            const txs = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]'); txs.unshift(tx); localStorage.setItem(STORAGE_TX, JSON.stringify(txs));
+            loadUser(); renderTransactions(); if(typeof updateChart === 'function') updateChart();
+            showReceipt(tx);
+            if(status === 'SUCCESS') showToast('Withdrawal requested: $' + amt.toFixed(2)); else showToast(message || 'Withdrawal failed');
+            closeWithdrawModal();
+        }
+
+        // show/hide card fields in Fund modal
+        $('#paymentMethod').addEventListener('change', ()=>{ const v = $('#paymentMethod').value; $('#cardFields').classList.toggle('hidden', v !== 'card'); });
+
+        // Make price influence crypto value in loadCrypto when symbol is BTC
+        // Make price influence crypto value: attempt to fetch live per-symbol prices, fallback to simulation
+        async function getPriceForSymbol(sym){
+            // common mapping symbol -> coingecko id
+            const map = { 'BTC':'bitcoin','ETH':'ethereum','LTC':'litecoin','DOGE':'dogecoin','BCH':'bitcoin-cash','ADA':'cardano','DOT':'polkadot','XRP':'ripple','BNB':'binancecoin','SOL':'solana','MATIC':'matic-network','SHIB':'shiba-inu','AVAX':'avalanche-2','LINK':'chainlink','BCH':'bitcoin-cash','TRX':'tron' };
+            const s = (sym||'').toUpperCase();
+            if(s === 'BTC') return currentPrice;
+            const id = map[s];
+            if(id){
+                try{
+                    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+encodeURIComponent(id)+'&vs_currencies=usd');
+                    if(res.ok){ const j = await res.json(); const p = j[id] && j[id].usd; if(p) return Number(p); }
+                }catch(e){ console.warn('price fetch failed for',s,e); }
+            }
+            // fallback approximate: use currentPrice * factor
+            return (typeof currentPrice !== 'undefined' ? currentPrice : 30000) * (0.05 + Math.random()*0.5);
+        }
+
+        async function loadCryptoLive(){
+            const arr = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            const list = $('#holdings');
+            if(arr.length===0){ list.innerHTML = '<div class="muted">No holdings yet</div>'; $('#cryptoVal').textContent = '$0.00'; return; }
+            // get unique symbols to fetch
+            const syms = Array.from(new Set(arr.map(x=>x.symbol.toUpperCase())));
+            const prices = {};
+            // fetch BTC from currentPrice; others via getPriceForSymbol
+            for(const s of syms){ prices[s] = await getPriceForSymbol(s); }
+            let total = 0;
+            list.innerHTML = arr.map(h=>{
+                const s = (h.symbol||'').toUpperCase();
+                const price = prices[s] || (currentPrice * 0.05);
+                const value = Number(h.amount || 0) * price;
+                total += value;
+                return `<div class="holding-row" data-symbol="${s}" style="display:flex;justify-content:space-between;padding:6px 0;align-items:center"><div>${s} <span class="muted">(${h.amount})</span></div><div style="display:flex;gap:8px;align-items:center"><div style="font-weight:700">$${Number(value).toLocaleString(undefined,{maximumFractionDigits:2})}</div><button class="btn ghost close-btn" data-symbol="${s}" onclick="window.closeHoldingWrapper('${s}')">Close</button></div></div>`;
+            }).join('');
+            // attach listeners to close buttons after rendering
+            setTimeout(()=>{
+                const buttons = list.querySelectorAll('.close-btn');
+                console.log('Attaching listeners to', buttons.length, 'close buttons');
+                buttons.forEach(b=>{
+                    if(b._closeListener) b.removeEventListener('click', b._closeListener);
+                    const sym = b.getAttribute('data-symbol');
+                    const fn = (e)=>{ console.log('Close clicked for', sym); if(typeof openPartialCloseModal === 'function') { console.log('Calling openPartialCloseModal'); openPartialCloseModal(sym); } else { console.error('openPartialCloseModal not defined'); } };
+                    b._closeListener = fn;
+                    b.addEventListener('click', fn);
+                });
+            }, 20);
+            $('#cryptoVal').textContent = '$' + total.toFixed(2);
+        }
+        // replace loadCrypto with live loader
+        loadCrypto = loadCryptoLive;
+        // initial run and periodic refreshes for live data
+        (async ()=>{ await loadCrypto(); if(typeof updateChart === 'function') updateChart(); try{ if(typeof renderDashboardMarketList === 'function') renderDashboardMarketList(); if(typeof renderCryptoBreakdown === 'function') renderCryptoBreakdown(); }catch(e){} })();
+        // refresh crypto holdings valuation every 10s
+        setInterval(async ()=>{ await loadCrypto(); if(typeof updateChart === 'function') updateChart(); try{ if(typeof renderDashboardMarketList === 'function') renderDashboardMarketList(); if(typeof renderCryptoBreakdown === 'function') renderCryptoBreakdown(); }catch(e){} }, 10000);
+
+        // small helper to format numbers
+        function formatNumber(n){ if(n === null || typeof n === 'undefined' || isNaN(Number(n))) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:2}); }
+
+        // Initialize per-coin chart for a selected symbol
+        async function initCoinChart(sym){
+            if(!sym) return;
+            selectedCoin = sym.toUpperCase();
+            // obtain a starting price
+            const p = await getPriceForSymbol(selectedCoin).catch(()=> null) || 30000;
+            initPriceData(p);
+            if(priceChart){ try{ priceChart.destroy(); }catch(e){} }
+            initPriceChart();
+            updatePriceChart();
+        }
+
+        // Render market list with common coins and live prices (batch fetch)
+        async function renderMarketList(){
+            const list = document.getElementById('marketList');
+            if(!list) return;
+            list.innerHTML = '<div class="market-row header" style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700"><div>Coin</div><div>Price</div><div>24h</div></div>';
+            const coins = ['BTC','ETH','BNB','SOL','MATIC','ADA','XRP','AVAX','DOGE','SHIB','LTC','LINK','TRX','DOT'];
+            const symbolToId = { BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',MATIC:'matic-network',ADA:'cardano',XRP:'ripple',AVAX:'avalanche-2',DOGE:'dogecoin',SHIB:'shiba-inu',LTC:'litecoin',LINK:'chainlink',TRX:'tron',DOT:'polkadot' };
+            const ids = coins.map(c=> symbolToId[c]).filter(Boolean).join(',');
+            try{
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+ids+'&vs_currencies=usd&include_24hr_change=true');
+                const data = res.ok ? await res.json() : {};
+                coins.forEach(sym=>{
+                    const id = symbolToId[sym];
+                    const price = data[id] && data[id].usd ? data[id].usd : null;
+                    const change = data[id] && data[id].usd_24h_change ? data[id].usd_24h_change : null;
+                    const row = document.createElement('div');
+                    row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.padding = '8px 0'; row.style.borderBottom = '1px dashed rgba(0,0,0,0.04)';
+                    row.className = 'market-row';
+                    row.innerHTML = `<div>${sym}</div><div id="price_${sym}">${price?('$'+formatNumber(price)):'-'}</div><div id="chg_${sym}" style="color:${change && change>0? 'var(--success)': change && change<0 ? 'var(--danger)' : 'var(--muted)'}">${change?formatNumber(change)+'%':'-'}</div>`;
+                    row.onclick = ()=>{ initCoinChart(sym); };
+                    list.appendChild(row);
+                });
+            }catch(err){
+                console.warn('market list fetch failed', err);
+                // fallback: show symbols and attempt individual price fetch
+                coins.forEach(sym=>{
+                    const row = document.createElement('div');
+                    row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.padding = '8px 0'; row.style.borderBottom = '1px dashed rgba(0,0,0,0.04)';
+                    row.className = 'market-row';
+                    row.innerHTML = `<div>${sym}</div><div id="price_${sym}">-</div><div id="chg_${sym}">-</div>`;
+                    row.onclick = ()=>{ initCoinChart(sym); };
+                    list.appendChild(row);
+                    getPriceForSymbol(sym).then(p=>{ const el = document.getElementById('price_'+sym); if(el) el.textContent = '$'+formatNumber(p); });
+                });
+            }
+        }
+
+        // call market list renderer after initial load
+        setTimeout(()=>{ renderMarketList(); }, 600);
+        // also refresh market list when the Crypto tab is opened and periodically
+        try{
+            // if nav links exist, call renderMarketList when crypto tab clicked
+            $$('.nav-link').forEach(n=> n.addEventListener('click', ()=>{ if(n.dataset.target === 'crypto'){ try{ renderMarketList(); }catch(e){ console.warn('renderMarketList error', e); } } }));
+        }catch(e){ console.warn('attach nav listener failed', e); }
+        // periodic refresh to keep prices up-to-date
+        setInterval(()=>{ try{ renderMarketList(); }catch(e){ console.warn('periodic market refresh failed', e); } }, 30000);
+
+        // Render a compact market list on the Dashboard
+        async function renderDashboardMarketList(){
+            const el = document.getElementById('dashboardMarketList'); if(!el) return;
+            el.innerHTML = '';
+            const coins = ['BTC','ETH','BNB','SOL','MATIC','ADA','XRP','DOGE'];
+            const symbolToId = { BTC:'bitcoin',ETH:'ethereum',BNB:'binancecoin',SOL:'solana',MATIC:'matic-network',ADA:'cardano',XRP:'ripple',DOGE:'dogecoin' };
+            const ids = coins.map(c=> symbolToId[c]).filter(Boolean).join(',');
+            try{
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+ids+'&vs_currencies=usd');
+                const data = res.ok?await res.json():{};
+                coins.forEach(sym=>{
+                    const id = symbolToId[sym]; const price = data[id] && data[id].usd ? data[id].usd : null;
+                    const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='6px 0'; row.style.cursor='pointer';
+                    row.innerHTML = `<div>${sym}</div><div style="font-weight:700">${price? '$'+formatNumber(price) : '-'}</div>`;
+                    row.onclick = ()=>{ initCoinChart(sym); /* open crypto tab */ $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='crypto')); sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'crypto')); };
+                    el.appendChild(row);
+                });
+            }catch(err){ console.warn('dashboard market fetch failed', err); el.textContent = 'Market data unavailable'; }
+        }
+
+        // Render per-coin crypto breakdown for holdings on dashboard
+        async function renderCryptoBreakdown(){
+            const container = document.getElementById('cryptoBreakdown'); if(!container) return;
+            const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]'); if(!holdings || holdings.length===0){ container.innerHTML = '<div class="muted">No holdings yet</div>'; return; }
+            const syms = Array.from(new Set(holdings.map(h=> (h.symbol||'').toUpperCase())));
+            const prices = {};
+            for(const s of syms){ prices[s] = await getPriceForSymbol(s); }
+            let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+            let total = 0;
+            const items = syms.map(s=>{
+                const amt = holdings.filter(h=> (h.symbol||'').toUpperCase()===s).reduce((a,h)=> a + Number(h.amount||0), 0);
+                const p = prices[s] || 0; const val = amt * p; total += val;
+                return { symbol: s, amount: amt, price: p, value: val };
+            });
+            items.forEach(it=>{
+                html += `<div style="display:flex;justify-content:space-between;align-items:center"><div>${it.symbol} <span class="small muted">(${it.amount})</span></div><div style="display:flex;gap:8px;align-items:center"><div style="font-weight:700">$${formatNumber(it.value)} <span class="small muted">@ $${formatNumber(it.price)}</span></div><button class="btn ghost" style="padding:6px 10px;font-size:12px" onclick="window.closeHoldingWrapper('${it.symbol}')">Close</button></div></div>`;
+            });
+            html += `<div style="border-top:1px dashed rgba(0,0,0,0.06);padding-top:8px;margin-top:8px;font-weight:700">Total: $${formatNumber(total)}</div>`;
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // price alert email notifier: when AI signal changes send alert
+        let _lastSignal = null;
+        async function sendPriceAlert(signal, symbol, price){
+            try{
+                const webhook = (localStorage.getItem('k9_email_webhook')||'').trim();
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null') || {};
+                const email = (user.email||'').trim();
+                if(!webhook || !email) return false;
+                const subject = `AJA Capital Alert: ${signal} ${symbol}`;
+                const text = `Signal: ${signal}\nSymbol: ${symbol}\nPrice: $${formatNumber(price)}\nTime: ${new Date().toLocaleString()}\n\nThis is an automated alert from AJA Capital demo.`;
+                
+                // Support both Formspree and generic webhook formats
+                const payload = webhook.includes('formspree')
+                    ? { email, message: subject + '\n\n' + text }
+                    : { to: email, subject, text };
+                
+                const res = await fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                return res.ok;
+            }catch(err){ console.warn('sendPriceAlert failed', err); return false; }
+        }
+
+        // small UX: if user exists, show account nav first
+        // Auth UI helper: hide/show create/login and provide logout when signed in
+        function updateAuthUI(loggedIn){
+            const openCreateBtn = $('#openCreate');
+            const openLoginBtn = $('#openLogin');
+            const quickCreateBtn = $('#quickCreate');
+            const createNav = $$('.nav-link').find ? $$('.nav-link').find(l=> l.dataset.target==='create') : $$('.nav-link').filter(l=> l.dataset.target==='create')[0];
+            // show/hide create and login buttons
+            if(openCreateBtn) openCreateBtn.style.display = loggedIn ? 'none' : '';
+            if(openLoginBtn) openLoginBtn.style.display = loggedIn ? 'none' : '';
+            if(quickCreateBtn) quickCreateBtn.style.display = loggedIn ? 'none' : '';
+            if(createNav) createNav.style.display = loggedIn ? 'none' : '';
+
+            // manage logout button near export
+            let logoutBtn = $('#logoutBtn');
+            if(loggedIn){
+                if(!logoutBtn){
+                    const btn = document.createElement('button'); btn.className = 'btn ghost'; btn.id = 'logoutBtn'; btn.style.marginLeft = '8px'; btn.textContent = 'Logout';
+                    const container = $('#exportBtn') ? $('#exportBtn').parentElement : document.querySelector('.header .flex');
+                    if(container) container.appendChild(btn);
+                    btn.addEventListener('click', ()=>{
+                        // remove session (keep profile if saved), update UI
+                        localStorage.removeItem(STORAGE_SESSION);
+                        loadUser();
+                        showToast('Signed out');
+                    });
+                }
+            } else {
+                if(logoutBtn) logoutBtn.remove();
+            }
+        }
+
+        // initial auth UI based on either profile or session
+        const hasUser = !!localStorage.getItem(STORAGE_USER) || !!localStorage.getItem(STORAGE_SESSION);
+        if(hasUser){
+            $$('.nav-link').forEach(l=> l.classList.toggle('active', l.dataset.target==='dashboard'));
+            sections.forEach(s=> s.classList.toggle('hidden', s.dataset.section !== 'dashboard'));
+            updateAuthUI(true);
+        } else {
+            updateAuthUI(false);
+        }
+
+        // Record a transaction helper
+        function recordTransaction(tx){
+            const txs = JSON.parse(localStorage.getItem(STORAGE_TX) || '[]'); txs.unshift(tx); localStorage.setItem(STORAGE_TX, JSON.stringify(txs)); renderTransactions();
+        }
+
+        // Close a holding (sell full position at market price)
+        async function closeHolding(sym){
+            try{
+                const s = (sym||'').toUpperCase();
+                const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+                const idx = holdings.findIndex(h=> (h.symbol||'').toUpperCase() === s);
+                if(idx < 0){ showToast('No holding for ' + s); return; }
+                const qty = Number(holdings[idx].amount || 0);
+                if(qty <= 0){ showToast('No quantity to close for ' + s); return; }
+                // fetch current price
+                const price = await getPriceForSymbol(s);
+                const proceeds = Number(price || 0) * qty;
+                // remove holding
+                holdings.splice(idx,1);
+                localStorage.setItem(STORAGE_CRYPTO, JSON.stringify(holdings));
+                loadCrypto();
+                // create sell order
+                const order = { time: new Date().toLocaleString(), type:'SELL', symbol: s, qty: qty, price: price, amount: (proceeds).toFixed(2) };
+                addOrder(order);
+                // credit user's deposit (simulate proceeds to balance)
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+                if(user){ user.deposit = (Number(user.deposit || 0) + proceeds); localStorage.setItem(STORAGE_USER, JSON.stringify(user)); loadUser(); }
+                // record transaction
+                const tx = { time: new Date().toLocaleString(), type: 'TRADE_SELL', method:'market', amount: proceeds, details: { symbol: s, qty }, status: 'SUCCESS' };
+                recordTransaction(tx);
+                showReceipt(tx);
+                showToast('Closed ' + qty + ' ' + s + ' for $' + Number(proceeds).toFixed(2));
+            }catch(err){ console.warn('closeHolding error', err); showToast('Failed to close position'); }
+        }
+
+        // --- Partial-close modal JS ---
+        let _pc_current = { symbol: null, maxQty: 0 };
+        
+        // Global wrapper for onclick fallback
+        window.closeHoldingWrapper = function(sym){ 
+            console.log('closeHoldingWrapper called with', sym);
+            openPartialCloseModal(sym); 
+        };
+        
+        function openPartialCloseModal(sym){
+            const s = (sym||'').toUpperCase();
+            const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+            const h = holdings.find(x=> (x.symbol||'').toUpperCase() === s);
+            if(!h){ showToast('No holding for ' + s); return; }
+            _pc_current.symbol = s; _pc_current.maxQty = Number(h.amount || 0);
+            const pcSym = document.getElementById('pc_symbol'); if(pcSym) pcSym.textContent = s + ' (you have ' + _pc_current.maxQty + ')';
+            const pcAmt = document.getElementById('pc_amount'); if(pcAmt) pcAmt.value = '';
+            const pcEst = document.getElementById('pc_estimate'); if(pcEst) pcEst.textContent = 'Estimated proceeds: $0.00';
+            const modal = document.getElementById('partialCloseModal'); if(modal){ modal.classList.remove('hidden'); modal.removeAttribute('aria-hidden'); }
+            setTimeout(()=>{ const el = document.getElementById('pc_amount'); if(el) el.focus(); }, 120);
+        }
+
+        async function updatePcEstimate(){
+            const raw = (document.getElementById('pc_amount')||{value:''}).value.trim();
+            const pcEst = document.getElementById('pc_estimate'); if(!pcEst) return;
+            if(!raw){ pcEst.textContent = 'Estimated proceeds: $0.00'; return; }
+            const s = _pc_current.symbol; if(!s) return;
+            let amt = 0;
+            if(raw.toUpperCase && raw.toUpperCase() === 'ALL') amt = _pc_current.maxQty; else amt = Number(raw);
+            if(isNaN(amt) || amt <= 0){ pcEst.textContent = 'Enter a valid amount'; return; }
+            if(amt > _pc_current.maxQty){ pcEst.textContent = 'Amount exceeds holding'; return; }
+            const price = await getPriceForSymbol(s).catch(()=>0);
+            const proceeds = Number(price || 0) * amt;
+            pcEst.textContent = 'Estimated proceeds: $' + formatNumber(proceeds);
+        }
+
+        async function confirmPartialClose(){
+            const raw = (document.getElementById('pc_amount')||{value:''}).value.trim();
+            if(!raw){ showToast('Enter amount to sell'); return; }
+            const s = _pc_current.symbol; if(!s){ showToast('No symbol selected'); return; }
+            let amt = 0; if(raw.toUpperCase && raw.toUpperCase() === 'ALL') amt = _pc_current.maxQty; else amt = Number(raw);
+            if(isNaN(amt) || amt <= 0){ showToast('Enter valid amount'); return; }
+            if(amt > _pc_current.maxQty){ showToast('Amount exceeds holding'); return; }
+            try{
+                const price = await getPriceForSymbol(s);
+                const proceeds = Number(price || 0) * amt;
+                // update holdings
+                const holdings = JSON.parse(localStorage.getItem(STORAGE_CRYPTO) || '[]');
+                const idx = holdings.findIndex(x=> (x.symbol||'').toUpperCase() === s);
+                if(idx < 0){ showToast('No holding found'); return; }
+                holdings[idx].amount = Number(holdings[idx].amount) - amt;
+                if(holdings[idx].amount <= 0) holdings.splice(idx,1);
+                localStorage.setItem(STORAGE_CRYPTO, JSON.stringify(holdings)); loadCrypto();
+                // order & tx
+                const order = { time: new Date().toLocaleString(), type:'SELL', symbol: s, qty: amt, price: price, amount: (proceeds).toFixed(2) };
+                addOrder(order);
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+                if(user){ user.deposit = Number(user.deposit || 0) + proceeds; localStorage.setItem(STORAGE_USER, JSON.stringify(user)); loadUser(); $('#balanceBadge').textContent = 'Balance: $' + Number(user.deposit).toLocaleString(undefined,{maximumFractionDigits:2}); }
+                const tx = { time: new Date().toLocaleString(), type: 'TRADE_SELL', method:'market', amount: proceeds, details: { symbol: s, qty: amt }, status: 'SUCCESS' };
+                recordTransaction(tx);
+                showReceipt(tx);
+                showToast('Sold ' + amt + ' ' + s + ' for $' + Number(proceeds).toFixed(2));
+            }catch(err){ console.warn('partial close failed', err); showToast('Failed to sell'); }
+            // close modal
+            const modal = document.getElementById('partialCloseModal'); if(modal){ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); }
+            _pc_current = { symbol:null, maxQty:0 };
+        }
+
+        // wire modal events safely
+        try{
+            const pcAmtEl = document.getElementById('pc_amount'); if(pcAmtEl) pcAmtEl.addEventListener('input', ()=> updatePcEstimate());
+            const pcCancel = document.getElementById('pc_cancel'); if(pcCancel) pcCancel.addEventListener('click', ()=>{ const modal = document.getElementById('partialCloseModal'); if(modal){ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); } });
+            const pcConfirm = document.getElementById('pc_confirm'); if(pcConfirm) pcConfirm.addEventListener('click', ()=> confirmPartialClose());
+            const pcBackdrop = document.getElementById('partialCloseBackdrop'); if(pcBackdrop) pcBackdrop.addEventListener('click', (e)=>{ if(e.target === e.currentTarget){ const modal = document.getElementById('partialCloseModal'); if(modal){ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); } } });
+        }catch(e){}
+
+        // Load configured email webhook (for OTP delivery) into an optional settings field
+        const savedWebhook = localStorage.getItem('k9_email_webhook') || '';
+        // add a simple settings field to the Settings card if present
+        if(document.querySelector('[data-section="settings"]')){
+            const settingsEl = document.querySelector('[data-section="settings"]');
+            const html = `\n<div class="card" style="margin-top:12px">\n  <div style="font-weight:700">📧 Email Configuration</div>\n  <div class="small muted" style="margin-top:6px">To receive receipts, alerts, and OTP codes, connect an email service.</div>\n  <div style="margin-top:12px">\n    <label class="small muted"><strong>Webhook URL</strong></label>\n    <input id="emailWebhook" placeholder="https://formspree.io/f/XXXXX" style="width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" value="${savedWebhook}" />\n  </div>\n  <div class="small muted" style="margin-top:10px;line-height:1.6;background:rgba(79,70,229,0.05);padding:10px;border-radius:6px"><strong>✨ Quick Setup (Formspree - Free):</strong><br/>1. Visit <a href="https://formspree.io" target="_blank" style="color:var(--accent)">formspree.io</a><br/>2. Sign up with your email<br/>3. Create a form, copy the endpoint<br/>4. Paste here & click Save<br/><br/><strong>📍 Other Options:</strong> Discord webhook, Make.com, Zapier, SendGrid</div>\n  <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">\n    <button class="btn ghost" id="testWebhook">Test Email</button>\n    <button class="btn ghost" id="clearWebhook">Clear</button>\n    <button class="btn" id="saveWebhook">Save</button>\n  </div>\n</div>\n`;
+            settingsEl.insertAdjacentHTML('beforeend', html);
+            $('#saveWebhook').addEventListener('click', ()=>{ const v = $('#emailWebhook').value.trim(); if(!v){ showToast('Webhook URL cannot be empty'); return; } localStorage.setItem('k9_email_webhook', v); showToast('✅ Webhook saved! Emails are now active.'); });
+            $('#clearWebhook').addEventListener('click', ()=>{ localStorage.removeItem('k9_email_webhook'); $('#emailWebhook').value = ''; showToast('Webhook cleared'); });
+            $('#testWebhook').addEventListener('click', async ()=>{ 
+                const webhook = $('#emailWebhook').value.trim();
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null') || {};
+                const email = (user.email || 'test@example.com').trim();
+                if(!webhook){ showToast('Enter webhook URL first'); return; }
+                showToast('Sending test email...', 2000);
+                try{
+                    // Try Formspree format first, then fallback to generic webhook format
+                    const payload = webhook.includes('formspree') 
+                        ? { email, message: '✅ AJA Capital Email Test\n\nThis is a test email from AJA Capital Dashboard.\n\nIf you received this, your email configuration is working!\n\nYou will now receive:\n- Trade receipts when you close positions\n- Price alerts on BUY/SELL signals\n- OTP codes for 2FA\n\nWelcome to AJA Capital!' }
+                        : { to: email, subject: '✅ AJA Capital Email Test', text: 'This is a test email from AJA Capital Dashboard.\n\nIf you received this, your email configuration is working!\n\nYou will now receive:\n- Trade receipts when you close positions\n- Price alerts on BUY/SELL signals\n- OTP codes for 2FA\n\nWelcome to AJA Capital!' };
+                    const res = await fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    if(res.ok){ showToast('✅ Test email sent! Check your inbox'); } else { showToast('⚠️ Webhook returned error: ' + res.status); }
+                }catch(e){ showToast('❌ Webhook failed: ' + e.message); }
+            });
+        }
+
+        // Send receipt to configured webhook (or any endpoint that accepts {to,subject,text})
+        async function sendReceiptEmail(tx, bodyText){
+            try{
+                const webhook = (localStorage.getItem('k9_email_webhook')||'').trim();
+                const user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null') || {};
+                const email = (user.email || '').trim();
+                const subject = `AJA Capital Receipt - ${tx.type} - $${Number(tx.amount).toFixed(2)}`;
+                const text = bodyText || JSON.stringify(tx);
+                
+                // Support both Formspree and generic webhook formats
+                const payload = webhook.includes('formspree')
+                    ? { email, message: subject + '\n\n' + text }
+                    : { to: email, subject, text };
+                
+                if(!webhook || !email){
+                    console.log('No webhook or recipient configured for receipts. Set Email webhook in Settings and ensure your account has an email.');
+                    return false;
+                }
+                // attempt POST and await response
+                try{
+                    const res = await fetch(webhook, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    if(!res.ok){
+                        console.warn('Receipt webhook returned non-OK', res.status);
+                        return false;
+                    }
+                    // success
+                    console.log('Receipt webhook sent');
+                    return true;
+                }catch(err){
+                    console.warn('Receipt webhook failed', err);
+                    return false;
+                }
+            }catch(err){ console.warn('sendReceiptEmail error', err); return false; }
+        }
+
+        // Keyboard shortcuts (navigates)
+        window.addEventListener('keydown', (e)=>{
+            if(e.key==='/' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('#openCreate').click(); }
+        });
+
+        // Demo data helpers if none
+        if(!localStorage.getItem(STORAGE_CRYPTO) && !localStorage.getItem(STORAGE_PROP) && !localStorage.getItem(STORAGE_USER)){
+            // leave empty for privacy/demo; not populating fake PII
+        }
+    </script>
+</body>
+</html></div>
